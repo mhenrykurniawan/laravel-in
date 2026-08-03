@@ -1,0 +1,31 @@
+LARAVEL + INERTIA
+
+1. Membuat project laravel dengan comand :
+composer create-project laravel/laravel:^11.0 nama-project
+2. cd nama-project
+3. composer require laravel/breeze --dev
+4. php artisan breeze:install react
+5. npm install
+
+//tidak perlu jika menambahkan role pada table user
+6. composer require spatie/laravel-permission
+7. php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+/////
+
+8. npm run dev
+9. buka di terminal lain lalu : php artisan serve
+10. buka http://127.0.0.1:8000
+
+11. install kebutuhan ui dan ikon
+npm install @heroicons/react
+npm install react-icons
+npm install sweetalert2
+npm install axios
+
+
+12. php artisan migrate (pastikan sudah ada table role)
+13. php artisan make:seeder RoleSeeder
+14. php artisan make:controller DashboardController
+
+
+15. php artisan make:model Room -mcr
