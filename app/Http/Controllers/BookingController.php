@@ -11,34 +11,122 @@ use Inertia\Inertia;
 
 class BookingController extends Controller
 {
+    // public function index(Request $request)
+    // {
+    //     // $query = Booking::with(['room', 'user']);
+
+    //     // // Jika dosen, hanya tampilkan data miliknya
+    //     // if (auth()->user()->hasRole('Dosen')) {
+    //     //     $query->where('user_id', auth()->id());
+    //     // }
+
+    //     // $bookings = $query->latest()->paginate(10);
+
+    //     // return Inertia::render('Bookings/Index', [
+    //     //     'bookings' => $bookings
+    //     // ]);
+
+    //     $query = Booking::with([
+    //         'room',
+    //         'user'
+    //     ]);
+
+    //     /*
+    // |--------------------------------------------------------------------------
+    // | Role Dosen
+    // |--------------------------------------------------------------------------
+    // */
+
+    //     if (auth()->user()->hasRole('Dosen')) {
+
+    //         $query->where('user_id', auth()->id());
+    //     }
+
+    //     /*
+    // |--------------------------------------------------------------------------
+    // | Search
+    // |--------------------------------------------------------------------------
+    // */
+
+    //     if ($request->filled('search')) {
+
+    //         $search = $request->search;
+
+    //         $query->where(function ($q) use ($search) {
+
+    //             $q->whereHas('room', function ($room) use ($search) {
+
+    //                 $room->where('name', 'like', "%$search%");
+    //             })
+
+    //                 ->orWhereHas('user', function ($user) use ($search) {
+
+    //                     $user->where('name', 'like', "%$search%");
+    //                 })
+
+    //                 ->orWhere('purpose', 'like', "%$search%");
+    //         });
+    //     }
+
+    //     /*
+    // |--------------------------------------------------------------------------
+    // | Status
+    // |--------------------------------------------------------------------------
+    // */
+
+    //     if ($request->filled('status')) {
+
+    //         $query->where('status', $request->status);
+    //     }
+
+    //     /*
+    // |--------------------------------------------------------------------------
+    // | Tanggal
+    // |--------------------------------------------------------------------------
+    // */
+
+    //     if ($request->filled('booking_date')) {
+
+    //         $query->whereDate(
+    //             'booking_date',
+    //             $request->booking_date
+    //         );
+    //     }
+
+    //     $bookings = $query
+    //         ->latest()
+    //         ->paginate(10)
+    //         ->withQueryString();
+
+    //     return Inertia::render('Bookings/Index', [
+
+    //         'bookings' => $bookings,
+
+    //         'filters' => $request->only([
+
+    //             'search',
+
+    //             'status',
+
+    //             'booking_date'
+
+    //         ])
+
+    //     ]);
+    // }
     public function index(Request $request)
     {
-        // $query = Booking::with(['room', 'user']);
-
-        // // Jika dosen, hanya tampilkan data miliknya
-        // if (auth()->user()->hasRole('Dosen')) {
-        //     $query->where('user_id', auth()->id());
-        // }
-
-        // $bookings = $query->latest()->paginate(10);
-
-        // return Inertia::render('Bookings/Index', [
-        //     'bookings' => $bookings
-        // ]);
-
         $query = Booking::with([
-            'room',
-            'user'
+            'room:id,kode_ruang,nama_ruang,gedung',
+            'user:id,name'
         ]);
 
         /*
     |--------------------------------------------------------------------------
-    | Role Dosen
+    | Dosen hanya melihat pengajuan miliknya
     |--------------------------------------------------------------------------
     */
-
         if (auth()->user()->hasRole('Dosen')) {
-
             $query->where('user_id', auth()->id());
         }
 
@@ -47,33 +135,39 @@ class BookingController extends Controller
     | Search
     |--------------------------------------------------------------------------
     */
-
         if ($request->filled('search')) {
 
             $search = $request->search;
 
             $query->where(function ($q) use ($search) {
 
+                // Cari berdasarkan data ruang
                 $q->whereHas('room', function ($room) use ($search) {
 
-                    $room->where('name', 'like', "%$search%");
+                    $room->where(function ($r) use ($search) {
+
+                        $r->where('kode_ruang', 'like', "%{$search}%")
+                            ->orWhere('nama_ruang', 'like', "%{$search}%")
+                            ->orWhere('gedung', 'like', "%{$search}%");
+                    });
                 })
 
+                    // Cari berdasarkan nama dosen
                     ->orWhereHas('user', function ($user) use ($search) {
 
-                        $user->where('name', 'like', "%$search%");
+                        $user->where('name', 'like', "%{$search}%");
                     })
 
-                    ->orWhere('purpose', 'like', "%$search%");
+                    // Cari berdasarkan keperluan
+                    ->orWhere('purpose', 'like', "%{$search}%");
             });
         }
 
         /*
     |--------------------------------------------------------------------------
-    | Status
+    | Filter Status
     |--------------------------------------------------------------------------
     */
-
         if ($request->filled('status')) {
 
             $query->where('status', $request->status);
@@ -81,18 +175,19 @@ class BookingController extends Controller
 
         /*
     |--------------------------------------------------------------------------
-    | Tanggal
+    | Filter Tanggal
     |--------------------------------------------------------------------------
     */
-
         if ($request->filled('booking_date')) {
 
-            $query->whereDate(
-                'booking_date',
-                $request->booking_date
-            );
+            $query->whereDate('booking_date', $request->booking_date);
         }
 
+        /*
+    |--------------------------------------------------------------------------
+    | Pagination
+    |--------------------------------------------------------------------------
+    */
         $bookings = $query
             ->latest()
             ->paginate(10)
@@ -102,15 +197,11 @@ class BookingController extends Controller
 
             'bookings' => $bookings,
 
-            'filters' => $request->only([
-
-                'search',
-
-                'status',
-
-                'booking_date'
-
-            ])
+            'filters' => [
+                'search'       => $request->search,
+                'status'       => $request->status,
+                'booking_date' => $request->booking_date,
+            ],
 
         ]);
     }
